@@ -5,16 +5,24 @@ import com.google.gson.reflect.TypeToken;
 
 import java.io.*;
 import java.lang.reflect.Type;
+import java.nio.file.*;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Config {
     private static Config instance;
+    private final Path configPath;
     private Map<String, Object> data;
-    private final File config;
 
-    public Config(String configFileName) {
-        this.config = new File(configFileName);
+    /** @deprecated use Config.getInstance(Path) instead */
+    @Deprecated
+    public Config(String configFileName) throws IOException {
+        this.configPath = Paths.get(configFileName).toAbsolutePath().normalize();
+        loadConfig();
+    }
+
+    public Config(Path configPath) throws IOException {
+        this.configPath = configPath;
         loadConfig();
     }
 
@@ -22,38 +30,53 @@ public class Config {
         return data.get(key);
     }
 
-    public void setOption(String key, Object value) {
+    public void setOption(String key, Object value) throws IOException {
         data.put(key, value);
         saveConfig();
     }
 
-    public boolean doesExists() {
-        return config.exists();
+    public boolean exists() {
+        return Files.exists(configPath);
     }
 
-    public void loadConfig() {
-        if (!config.exists()) {
+    private void loadConfig() throws IOException {
+        if (!Files.exists(configPath)) {
             data = new HashMap<>();
             saveConfig();
         } else {
-            try (Reader reader = new FileReader(config)) {
-                GsonBuilder builder = new GsonBuilder();
-                Gson gson = builder.create();
+            try (Reader reader = Files.newBufferedReader(configPath)) {
                 Type type = new TypeToken<HashMap<String, Object>>(){}.getType();
-                data = gson.fromJson(reader, type);
-            } catch (IOException | JsonSyntaxException e) {
-                e.printStackTrace();
+                data = new Gson().fromJson(reader, type);
+            } catch (JsonSyntaxException e) {
+                throw new IOException("Broken JSON in " + configPath, e);
             }
         }
     }
 
-    private void saveConfig() {
-        try (Writer writer = new FileWriter(config)) {
-            GsonBuilder builder = new GsonBuilder();
-            Gson gson = builder.setPrettyPrinting().create();
-            gson.toJson(data, writer);
-        } catch (IOException e) {
-            e.printStackTrace();
+    private void saveConfig() throws IOException {
+        Path parent = configPath.getParent();
+        if (parent != null) {
+            Files.createDirectories(parent);
         }
+
+        try (Writer writer = Files.newBufferedWriter(configPath,
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+            new GsonBuilder().setPrettyPrinting().create().toJson(data, writer);
+        }
+    }
+
+    @Deprecated
+    public static Config getInstance(String configFileName) throws IOException {
+        if (instance == null) {
+            instance = new Config(configFileName);
+        }
+        return instance;
+    }
+
+    public static Config getInstance(Path configPath) throws IOException {
+        if (instance == null || !instance.configPath.equals(configPath)) {
+            instance = new Config(configPath);
+        }
+        return instance;
     }
 }
