@@ -1,18 +1,18 @@
 package com.aeroshide.rose_bush.gui;
 
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.text.MutableText;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.network.chat.MutableComponent;
 
-public class IntFieldWidget extends TextFieldWidget {
-    public IntFieldWidget(TextRenderer textRenderer, int x, int y, int width, int height, MutableText message) {
+public class IntFieldWidget extends EditBox {
+    public IntFieldWidget(Font textRenderer, int x, int y, int width, int height, MutableComponent message) {
         super(textRenderer, x, y, width, height, message);
     }
 
-    public void write(String text) {
-        String oldText = this.getText();
-        super.write(text);
-        String newText = this.getText();
+    public void insertText(String text) {
+        String oldText = this.getValue();
+        super.insertText(text);
+        String newText = this.getValue();
 
         while (newText.length() > 1 && newText.startsWith("0")) {
             newText = newText.substring(1);
@@ -21,15 +21,15 @@ public class IntFieldWidget extends TextFieldWidget {
         try {
             long number = Long.parseLong(newText);
         } catch (NumberFormatException e) {
-            this.setText(oldText);
+            this.setValue(oldText);
             return;
         }
-        this.setText(newText);
+        this.setValue(newText);
     }
 
 
     public int getInt() {
-        String text = this.getText();
+        String text = this.getValue();
         if (text == null || text.isEmpty()) {
             return 0;
         }

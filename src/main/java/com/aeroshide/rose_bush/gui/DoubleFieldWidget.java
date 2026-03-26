@@ -1,30 +1,30 @@
 package com.aeroshide.rose_bush.gui;
 
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.text.MutableText;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.network.chat.MutableComponent;
 
-public class DoubleFieldWidget extends TextFieldWidget {
-    public DoubleFieldWidget(TextRenderer textRenderer, int x, int y, int width, int height, MutableText message) {
+public class DoubleFieldWidget extends EditBox {
+    public DoubleFieldWidget(Font textRenderer, int x, int y, int width, int height, MutableComponent message) {
         super(textRenderer, x, y, width, height, message);
     }
 
     @Override
-    public void write(String text) {
-        String oldText = this.getText();
-        super.write(text);
-        String newText = this.getText();
+    public void insertText(String text) {
+        String oldText = this.getValue();
+        super.insertText(text);
+        String newText = this.getValue();
 
         try {
             double number = Double.parseDouble(newText);
-            this.setText(Double.toString(number));
+            this.setValue(Double.toString(number));
         } catch (NumberFormatException e) {
-            this.setText(oldText);
+            this.setValue(oldText);
         }
     }
 
     public double getDouble() {
-        String text = this.getText();
+        String text = this.getValue();
         if (text == null || text.isEmpty()) {
             return 0.0;
         }
